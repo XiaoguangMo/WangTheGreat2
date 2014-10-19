@@ -21,11 +21,12 @@ string loc="/Users/NNNO/Desktop/WangTheGreat2/WangTheGreat2/test.txt";
 
 int memorySize;
 int slabSize;
+int slabProportion;
 
 struct treeNode{
-    struct treeNode *left;
-    struct treeNode *right;
-    struct treeNode *father;
+//    struct treeNode *left;
+//    struct treeNode *right;
+//    struct treeNode *father;
     int pid,size,space;
 };
 //treeNode *root=new treeNode;
@@ -38,14 +39,6 @@ void printTree(treeNode *node);
 
 
 int main(int argc, const char * argv[]) {
-    treeNode *root = new treeNode;
-    root->pid=-1;
-    root->right=NULL;
-//    treeNode *startRoot=new treeNode;
-//    startRoot->space=0;
-//    startRoot->size=0;
-//    root=*startRoot;
-//    treeNode *slabRoot = new treeNode;
     ifstream file;
     file.open(loc);
     string line;
@@ -59,23 +52,22 @@ int main(int argc, const char * argv[]) {
             }
             if (line.substr(0,11)=="memorySize(") {
                 memorySize=convertToInt(line.substr(11,line.length()-13));
-                root->size=memorySize;
-                cout<<"total memory size is 2^ "<<log2(memorySize)<<endl;
+//                cout<<"total memory size is 2^ "<<log2(memorySize)<<endl;
 //                cout<<"test: insert 255: "<<log2(255)<<" qu zheng: "<<ceil(log2(255))<<endl;
             }else if(line.substr(0,9)=="slabSize(") {
                 int find=0;
                 for (find=0; find<line.length(); find++) {
                     if (line[find]=='B') {
                         slabSize=convertToInt(line.substr(9,find-8));
-                        cout<<"total slab size is 2^ "<<log2(slabSize)<<endl;
+//                        cout<<"total slab size is 2^ "<<log2(slabSize)<<endl;
                     }
                     if (line[find]==',') {
                         if (line[find+1]=='1'&&line[find+2]=='/') {
                             string temp=line.substr(find+3);
                             temp=temp.substr(0,temp.length()-2);
                             int temp2=atoi(temp.c_str());
-                            cout<<"slab start from layer: "<<log2(memorySize/temp2)<<" temp2 is: "<<temp2<<endl;
-                            insertNode(root, -1, memorySize/temp2);
+                            slabProportion=temp2;
+//                            cout<<"slab start from layer: "<<log2(memorySize/temp2)<<" temp2 is: "<<slabProportion<<endl;
                         }
                         else{
                             cout<<"Invaliad input"<<endl;
@@ -84,10 +76,31 @@ int main(int argc, const char * argv[]) {
                         
                     }
                 }
-                //insert slabroot
-//                insertNode(root, -1, log2(memorySize));
-            }else if(line.substr(0,6)=="alloc("){
-                string temp=line.substr(6,line.length()-6);
+            }
+        }
+    }
+    file.close();
+    ifstream file2;
+    file2.open(loc);
+    string line2;
+    struct treeNode{
+        int pid,size;
+    }treeNode[memorySize/slabSize*2];
+    for (int i=0; i<memorySize/slabSize*2; i++) {
+        treeNode[i].pid=0;
+        treeNode[i].size=0;
+    }
+    treeNode[slabProportion-1].pid=-1;
+    while (getline(file2, line2)) {
+        if (line2.length()>0) {
+            for (int i=0; i<line2.length(); i++) {
+                if (line2[i]==' ') {
+                    line2.erase(i,1);
+                    i-=1;
+                }
+            }
+            if(line2.substr(0,6)=="alloc("){
+                string temp=line2.substr(6,line2.length()-6);
                 string temp2;
                 temp=temp.substr(0,temp.length()-2);
                 for (int i=0; i<temp.length(); i++) {
@@ -97,122 +110,216 @@ int main(int argc, const char * argv[]) {
                     }
                 }
                 if (convertToInt(temp2)<=slabSize&&convertToInt(temp2)>slabSize/2) {
-                    cout<<convertToInt(temp2)<<" should be put into the slab"<<endl;
-//                    insertNode(slabRoot, atoi(temp.c_str()), convertToInt(temp2));
+//                    cout<<convertToInt(temp2)<<" should be put into the slab"<<endl;
+                    int a=pow(2,ceil(log2(convertToInt(temp2))));
+//                    cout<<log2(memorySize/slabSize/2)<<endl;
+//                    cout<<memorySize/slabSize*2<<" and "<<memorySize/a-1<<endl;
+                    int flag=0;
+                    for (int i=memorySize/a-1;i<memorySize/a-1+memorySize/a/slabProportion ; i++) {
+                        if (treeNode[i].pid==0&&flag==0) {
+                            flag=1;
+                            temp2=temp2.substr(0,temp2.length()-2);
+//                            cout<<"pid="<<temp<<" size="<<temp2<<endl;
+                            treeNode[i].pid=atoi(temp.c_str());
+                            treeNode[i].size=convertToInt(temp2);
+//                            cout<<"pid="<<treeNode[i].pid<<" size="<<treeNode[i].size<<endl;
+                        }
+                    }
+                    if (flag==0) {
+                        //start compation
+                        
+                    }
+//                    cout<<a<<endl;
+                }else{
+//                    cout<<convertToInt(temp2)<<" should be put into the buddy"<<endl;
+                    if (convertToInt(temp2)>slabSize) {
+                        int a=pow(2,ceil(log2(convertToInt(temp2))));
+                        //                    cout<<log2(memorySize/slabSize/2)<<endl;
+                        //                    cout<<memorySize/slabSize*2<<" and "<<memorySize/a-1<<endl;
+                        int flag=0;
+//                        cout<<"test"<<memorySize/a+memorySize/a/slabProportion<<"test"<<memorySize/a+memorySize/a-2<<endl;
+                        for (int i=memorySize/a+memorySize/a/slabProportion;i<memorySize/a+memorySize/a-2; i++) {
+
+                            if (treeNode[i].pid==0&&flag==0) {
+                                flag=1;
+                                temp2=temp2.substr(0,temp2.length()-2);
+                                //                            cout<<"pid="<<temp<<" size="<<temp2<<endl;
+                                
+                                treeNode[i].pid=atoi(temp.c_str());
+                                treeNode[i].size=convertToInt(temp2);
+                                //                            cout<<"pid="<<treeNode[i].pid<<" size="<<treeNode[i].size<<endl;
+                            }
+                        }
+                        //                    cout<<a<<endl;
+                    }else{
+                        //zui nan chu li
+                        
+                    }
+                }
+                //                cout<<"insert "<<temp<<"  "<<temp2<<endl;
+            }else if (line2.substr(0,5)=="free("){
+                string temp=line2.substr(5,line2.length()-7);
+//                cout<<"free!!!!!!"<<temp<<endl;
+                for (int i=0; i<memorySize/slabSize*2; i++) {
+                    if (treeNode[i].pid==atoi(temp.c_str())) {
+                        treeNode[i].pid=0;
+                        treeNode[i].size=0;
+                    }
+                }
+            }else if (line2.substr(0,8)=="realloc("){
+                string temp=line2.substr(8,line2.length()-10);
+                string temp2;
+                for (int i=0; i<temp.length(); i++) {
+                    if (temp[i]==',') {
+                        temp2=temp.substr(i+1);
+                        temp=temp.substr(0,i);
+                    }
+                }
+                for (int i=0; i<memorySize/slabSize*2; i++) {
+                    if (treeNode[i].pid==atoi(temp.c_str())) {
+                        treeNode[i].pid=0;
+                        treeNode[i].size=0;
+                    }
+                }
+                if (convertToInt(temp2)<=slabSize&&convertToInt(temp2)>slabSize/2) {
+                    //                    cout<<convertToInt(temp2)<<" should be put into the slab"<<endl;
+                    int a=pow(2,ceil(log2(convertToInt(temp2))));
+                    //                    cout<<log2(memorySize/slabSize/2)<<endl;
+                    //                    cout<<memorySize/slabSize*2<<" and "<<memorySize/a-1<<endl;
+                    int flag=0;
+                    for (int i=memorySize/a-1;i<memorySize/a-1+memorySize/a/slabProportion ; i++) {
+                        if (treeNode[i].pid==0&&flag==0) {
+                            flag=1;
+                            temp2=temp2.substr(0,temp2.length()-2);
+                            //                            cout<<"pid="<<temp<<" size="<<temp2<<endl;
+                            
+                            treeNode[i].pid=atoi(temp.c_str());
+                            treeNode[i].size=convertToInt(temp2);
+                            //                            cout<<"pid="<<treeNode[i].pid<<" size="<<treeNode[i].size<<endl;
+                        }
+                    }
+                    //                    cout<<a<<endl;
                 }else{
                     cout<<convertToInt(temp2)<<" should be put into the buddy"<<endl;
-//                    insertNode(root, atoi(temp.c_str()), convertToInt(temp2));
                 }
-//                insertNode(&root, atoi(temp.c_str()), convertToInt(temp2));
-//                cout<<"insert "<<temp<<"  "<<temp2<<endl;
-            }else if(line.substr(0,7)=="dump();"){
-                cout<<"this is a dump"<<endl;
-                printTree(root);
-            }else if (line.substr(0,5)=="free("){
-                cout<<"this is a free"<<endl;
-            }else
+//                                cout<<"realloc!!!!!!"<<temp<<"second part "<<temp2<<endl;
+            }else if(line2.substr(0,7)=="dump();"){
+//                cout<<"this is a dump"<<endl;
+                cout<<"slab:"<<endl;
+                for (int i=; <#condition#>; <#increment#>) {
+                    for (<#initialization#>; <#condition#>; <#increment#>) {
+                        <#statements#>
+                    }
+                }
+                for (int i=0; i<memorySize/slabSize*2; i++) {
+                    if (treeNode[i].pid!=0) {
+                        cout<<"pid="<<treeNode[i].pid<<" size="<<treeNode[i].size<<endl;
+                    }
+                    
+                }
+                cout<<"buddy"<<endl;
+                
+            }
+        else
             {
-                cout<<line<<endl;
+//                cout<<line2<<endl;
             }
         }
     }
-    file.close();
+    file2.close();
     //finish reading input file, start build binary tree
-//    insertNode(NULL, root, 123, 321);
-//    insertNode(root, slabRoot, -1, -1);
-    
     return 0;
 }
 
-treeNode * CreateTree(treeNode *bTree,treeNode *father,int pid,int size,int space,int layer)
-{
-    cout<<"found root's left"<<endl;
-    father->left=bTree;
-    bTree=father->left;
-    bTree = (treeNode *)malloc(sizeof(treeNode));
-    bTree->pid=pid;
-    bTree->size=size;
-    bTree->space=space;
-    bTree->father=father;
-    bTree->left=NULL;
-    bTree->right=NULL;
-    layer--;
-    if(layer == 0)
-    {
-        bTree = NULL;	//置为NULL后结束
-        return bTree;
-    }
-    //    bTree ->m_nValue = input;
-    if (bTree->space>0) {
-//        bTree->left = CreateTree(bTree->left);
-    }
-    else{
-//        bTree->right = CreateTree(bTree->right);
-    }
-    
-    return bTree;
-}
-
-// insert node into tree
-void insertNode(treeNode *father, int pid, int size)
-{
-    cout<<"insert called"<<endl;
-    treeNode *node;
-    node=CreateTree(node, father, pid, size, 123, 123);
-//    treeNode *newNode = new treeNode;
-//    newNode->left=newNode->right=NULL;
-//    newNode->pid=pid;
-//    newNode->size=size;
-//    newNode->father=father;
-//    int whichLayer=log2(memorySize)-ceil(log2(size));
-//    //    whichLayer=log2(memorySize)-whichLayer;
-//    //    cout<<"which layer: "<<whichLayer<<endl;
-//    if (father==NULL) {
-//        cout<<"Return a null pointer."<<endl;
-//        exit(0);
+//treeNode * CreateTree(treeNode *bTree,treeNode *father,int pid,int size,int space,int layer)
+//{
+//    cout<<"found root's left"<<endl;
+//    father->left=bTree;
+//    bTree=father->left;
+//    bTree = (treeNode *)malloc(sizeof(treeNode));
+//    bTree->pid=pid;
+//    bTree->size=size;
+//    bTree->space=space;
+//    bTree->father=father;
+//    bTree->left=NULL;
+//    bTree->right=NULL;
+//    layer--;
+//    if(layer == 0)
+//    {
+//        bTree = NULL;	//置为NULL后结束
+//        return bTree;
 //    }
-//    //start to deal with size
-//    //    cout<<"node's size is: "<<newNode->size<<" pid is: "<<newNode->pid<<endl;
-//    //    cout<<"slab size is: "<<slabSize<<endl;
-//    
-//    
-//    //    treeNode *back=nullptr;
-//    treeNode *current=father;
-//    if (pid==-1) {
-//        while (1) {
-//            if (whichLayer>0) {
-//                //                treeNode *node=new treeNode;
-//                //                node=current->left;
-//                //                current=node;
-//                //                whichLayer--;
-//            }
-//        }
+//    //    bTree ->m_nValue = input;
+//    if (bTree->space>0) {
+////        bTree->left = CreateTree(bTree->left);
 //    }
 //    else{
-//        while (current!=NULL) {
-//            //        back=current;
-//            if(size<father->size) {
-//                //            current=current->left;
-//                //            father->left=newNode;
-//                //            cout<<"hello"<<endl;
-//            }else{
-//                //            current->right=current;
-//                //            father->right=newNode;
-//                current=current->right;
-//            }
-//        }
+////        bTree->right = CreateTree(bTree->right);
 //    }
-} // end function insertNode
-
-void printTree(treeNode *node)      //这是中序遍历二叉树，采用了递归的方法。
-{
-    if(node!=NULL)
-    {
-        cout<<"pid is: "<<node->pid<<" size is: "<<node->size<<endl;
-        printTree(node->left);
-        printTree(node->right);
-    }
-}
+//    
+//    return bTree;
+//}
+//
+//// insert node into tree
+//void insertNode(treeNode *father, int pid, int size)
+//{
+//    cout<<"insert called"<<endl;
+//    treeNode *node;
+//    node=CreateTree(node, father, pid, size, 123, 123);
+////    treeNode *newNode = new treeNode;
+////    newNode->left=newNode->right=NULL;
+////    newNode->pid=pid;
+////    newNode->size=size;
+////    newNode->father=father;
+////    int whichLayer=log2(memorySize)-ceil(log2(size));
+////    //    whichLayer=log2(memorySize)-whichLayer;
+////    //    cout<<"which layer: "<<whichLayer<<endl;
+////    if (father==NULL) {
+////        cout<<"Return a null pointer."<<endl;
+////        exit(0);
+////    }
+////    //start to deal with size
+////    //    cout<<"node's size is: "<<newNode->size<<" pid is: "<<newNode->pid<<endl;
+////    //    cout<<"slab size is: "<<slabSize<<endl;
+////    
+////    
+////    //    treeNode *back=nullptr;
+////    treeNode *current=father;
+////    if (pid==-1) {
+////        while (1) {
+////            if (whichLayer>0) {
+////                //                treeNode *node=new treeNode;
+////                //                node=current->left;
+////                //                current=node;
+////                //                whichLayer--;
+////            }
+////        }
+////    }
+////    else{
+////        while (current!=NULL) {
+////            //        back=current;
+////            if(size<father->size) {
+////                //            current=current->left;
+////                //            father->left=newNode;
+////                //            cout<<"hello"<<endl;
+////            }else{
+////                //            current->right=current;
+////                //            father->right=newNode;
+////                current=current->right;
+////            }
+////        }
+////    }
+//} // end function insertNode
+//
+//void printTree(treeNode *node)      //这是中序遍历二叉树，采用了递归的方法。
+//{
+//    if(node!=NULL)
+//    {
+//        cout<<"pid is: "<<node->pid<<" size is: "<<node->size<<endl;
+//        printTree(node->left);
+//        printTree(node->right);
+//    }
+//}
 
 int convertToInt(string temp){
     int result;

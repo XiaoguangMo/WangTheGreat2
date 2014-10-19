@@ -3,4 +3,5 @@ slabSize(512KB, 1/8);
 alloc(365, 500KB);
 alloc(1758, 1GB);
 alloc(3, 300KB);
+realloc(3, 400KB);
 dump();
