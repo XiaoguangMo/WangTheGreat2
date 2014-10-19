@@ -4,4 +4,4 @@ alloc(365, 500KB);
 alloc(1758, 1GB);
 alloc(3, 300KB);
 realloc(3, 400KB);
-dump();
+dump();pow(2, i+1)-2
